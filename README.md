@@ -1,4 +1,5 @@
 MwDumpProcessor
 ===============
 
-An example of usage of XML parsers available in questpc framework (https://bitbucket.org/sdvpartnership/questpc-framework) to process MediaWiki XML dumps.
+An example of QuestPC framework XML parsers usage to process MediaWiki XML dumps.
+https://bitbucket.org/sdvpartnership/questpc-framework
