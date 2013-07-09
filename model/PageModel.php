@@ -4,6 +4,9 @@ use QuestPC as Q;
 
 class PageModel extends Q\FeaturesObject {
 
+	const NS_MAIN = 0;
+	const NS_FILE = 6;
+
 	protected $pageProps;
 	protected $revProps;
 

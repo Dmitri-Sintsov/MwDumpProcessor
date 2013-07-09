@@ -24,34 +24,42 @@ class MwDump {
 	 * Used to sanitize dump using XMLWriter formatting.
 	 */
 	public function noopHook( PageModel $pageModel ) {
+		return true;
 	}
 	
 	public function addArchiveCategory( PageModel $pageModel ) {
-		if ( $pageModel->getSubProp( 'pageProps', 'ns' ) === 0 ) {
+		if ( $pageModel->getSubProp( 'pageProps', 'ns' ) === PageModel::NS_MAIN ) {
 			$this->wikiParser->setProp( 'pageModel', $pageModel );
 			if ( $this->wikiParser->addCategory( 'Архив' ) ) {
 				$pageModel->setTimestamp( Q\Gl::timeStamp() );
 			}
 		}
+		return true;
 	}
 
 	public function renameCategory( PageModel $pageModel ) {
-		if ( $pageModel->getSubProp( 'pageProps', 'ns' ) === 0 ) {
+		if ( $pageModel->getSubProp( 'pageProps', 'ns' ) === PageModel::NS_MAIN ) {
 			$this->wikiParser->setProp( 'pageModel', $pageModel );
 			if ( $this->wikiParser->renameCategory( 'Публикации', 'Наука' ) ) {
 				$pageModel->setTimestamp( Q\Gl::timeStamp() );
 			}
 		}
+		return true;
 	}
 
 	public function forceRenameCategory( PageModel $pageModel ) {
-		if ( $pageModel->getSubProp( 'pageProps', 'ns' ) === 0 ) {
+		if ( $pageModel->getSubProp( 'pageProps', 'ns' ) === PageModel::NS_MAIN ) {
 			$this->wikiParser->setProp( 'pageModel', $pageModel );
 			if ( $this->wikiParser->deleteCategory( 'События' ) ) {
 				$pageModel->setTimestamp( Q\Gl::timeStamp() );
 				$this->wikiParser->addCategory( 'Архив' );
 			}
 		}
+		return true;
+	}
+
+	public function filterFiles( PageModel $pageModel ) {
+		return $pageModel->getSubProp( 'pageProps', 'ns' ) === PageModel::NS_FILE;
 	}
 
 	public function process( $inFileName, $outFileName ) {
@@ -60,7 +68,8 @@ class MwDump {
 		# $dumpParser->addPageHook( array( $this, 'noopHook' ) );
 		# $dumpParser->addPageHook( array( $this, 'addArchiveCategory' ) );
 		# $dumpParser->addPageHook( array( $this, 'renameCategory' ) );
-		$dumpParser->addPageHook( array( $this, 'forceRenameCategory' ) );
+		# $dumpParser->addPageHook( array( $this, 'forceRenameCategory' ) );
+		$dumpParser->addPageHook( array( $this, 'filterFiles' ) );
 		$dumpParser->parse();
 	}
 

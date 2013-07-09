@@ -6,6 +6,9 @@ class MwDumpParser extends Q\XmlReaderParser {
 
 	protected $outFileName = 'result.xml';
 	protected $xmlw;
+	# PageModel processing callbacks.
+	# return true when page has to be written into destination dump.
+	# return false when page has to be discarded from destination dump.
 	protected $pageHooks = array();
 
 	public function setOutputFileName( $outFileName ) {
@@ -27,13 +30,19 @@ class MwDumpParser extends Q\XmlReaderParser {
 	}
 
 	protected function parsePage() {
+		$shouldWrite = true;
 		$pageModel = new PageModel();
 		$pageParser = PageParser::newFromTop( $this );
 		$pageParser->parseModel( $pageModel );
 		foreach ( $this->pageHooks as $cb ) {
-			call_user_func( $cb, $pageModel );
+			if ( !call_user_func( $cb, $pageModel ) ) {
+				$shouldWrite = false;
+				break;
+			}
 		}
-		$this->xmlw->writeArray( $pageModel->getTagArray() );
+		if ( $shouldWrite ) {
+			$this->xmlw->writeArray( $pageModel->getTagArray() );
+		}
 	}
 
 	public function addPageHook( $cb ) {
