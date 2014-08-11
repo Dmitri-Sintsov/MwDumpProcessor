@@ -62,6 +62,18 @@ class MwDump {
 		return $pageModel->getSubProp( 'pageProps', 'ns' ) === PageModel::NS_FILE;
 	}
 
+	public function touchModified( PageModel $pageModel ) {
+		if ( $pageModel->getSubProp( 'revProps', 'base36sha1' ) !==
+			$pageModel->getSubProp( 'textProps', 'base36sha1' ) ) {
+			$pageModel->setTimestamp( time() );
+			$pageModel->setRevBase36Sha1( $pageModel->getSubProp( 'textProps', 'base36sha1' ) );
+			# Q\Dbg\log('modifiedPage',$pageModel);
+			return true;
+		} else {
+			return false;
+		}
+	}
+
 	public function process( $inFileName, $outFileName ) {
 		$dumpParser = MwDumpParser::newFromUri( $inFileName );
 		$dumpParser->setOutputFileName( $outFileName );
@@ -69,7 +81,8 @@ class MwDump {
 		# $dumpParser->addPageHook( array( $this, 'addArchiveCategory' ) );
 		# $dumpParser->addPageHook( array( $this, 'renameCategory' ) );
 		# $dumpParser->addPageHook( array( $this, 'forceRenameCategory' ) );
-		$dumpParser->addPageHook( array( $this, 'filterFiles' ) );
+		# $dumpParser->addPageHook( array( $this, 'filterFiles' ) );
+		$dumpParser->addPageHook( array( $this, 'touchModified' ) );
 		$dumpParser->parse();
 	}
 

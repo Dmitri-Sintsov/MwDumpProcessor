@@ -9,10 +9,12 @@ class PageModel extends Q\FeaturesObject {
 
 	protected $pageProps;
 	protected $revProps;
+	protected $textProps;
 
 	function __construct() {
 		$this->pageProps = new \stdClass();
 		$this->revProps = new \stdClass();
+		$this->textProps = new \stdClass();
 	}
 
 	public function setTitle( $title ) {
@@ -43,11 +45,15 @@ class PageModel extends Q\FeaturesObject {
 	}
 
 	public function setTimestamp( $ts ) {
-		$ts = Q\Gl::timeStamp( Q\Gl::TS_UNIX, $ts );
+		$ts = is_numeric( $ts ) ? $ts : Q\Gl::timeStamp( Q\Gl::TS_UNIX, $ts );
 		if ( $ts === false ) {
 			SdvException::throwRecoverable( 'Invalid timestamp of revision', __METHOD__, $ts );
 		}
 		$this->revProps->ts = $ts;
+	}
+
+	public function setUserIP( $userIP ) {
+		$this->revProps->userIP = $userIP;
 	}
 
 	public function setUserName( $userName ) {
@@ -72,8 +78,8 @@ class PageModel extends Q\FeaturesObject {
 
 	public function setText( $text ) {
 		$this->revProps->text = $text;
-		$this->revProps->base36sha1 = Q\Gl::baseConvert( sha1( $text ), 16, 36, 31 );
-		$this->revProps->textAttrs->bytes = strlen( $text );
+		$this->textProps->base36sha1 = Q\Gl::baseConvert( sha1( $text ), 16, 36, 31 );
+		$this->textProps->bytes = strlen( $text );
 	}
 
 	public function setRevBase36Sha1( $base36sha1 ) {
@@ -104,17 +110,28 @@ class PageModel extends Q\FeaturesObject {
 		if ( property_exists( $this->revProps, 'parentId' ) ) {
 			$revision[] = array( '@tag' => 'parentid', $this->revProps->parentId );
 		}
+		if ( !property_exists( $this->revProps, 'textAttrs' ) ) {
+			Q\SdvException::throwError( 'Revision property textAttrs does not exists', __METHOD__, $this->revProps );
+		}
 		$textTagArray = (array) $this->revProps->textAttrs;
 		$textTagArray['@tag'] = 'text';
 		if ( $this->revProps->text !== '' ) {
 			$textTagArray[] = $this->revProps->text;
 		}
+		$contributor = array( '@tag' => 'contributor' );
+		if ( property_exists( $this->revProps, 'userIP' ) ) {
+			array_push( $contributor,
+				array( '@tag' => 'ip', $this->revProps->userIP )
+			);
+		} else {
+			array_push( $contributor,
+				array( '@tag' => 'username', $this->revProps->userName ),
+				array( '@tag' => 'id', $this->revProps->uid )
+			);
+		}
 		array_push( $revision,
 			array( '@tag' => 'timestamp', Q\Gl::timeStamp( Q\Gl::TS_ISO_8601, $this->revProps->ts ) ),
-			array( '@tag' => 'contributor',
-				array( '@tag' => 'username', $this->revProps->userName ),
-				array( '@tag' => 'id', $this->revProps->uid ),
-			)
+			$contributor
 		);
 		if ( property_exists( $this->revProps, 'isMinor' ) &&
 				$this->revProps->isMinor ) {
